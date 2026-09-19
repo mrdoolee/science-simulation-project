@@ -394,6 +394,34 @@ const polar = (cx, cy, r, deg) => ({
   y: cy + r * Math.sin((deg * Math.PI) / 180),
 });
 
+/* 원 안에 양성자(+)와 전자(−)를 함께 그린다.
+   p, e: 양성자·전자 개수 / sep: 0이면 골고루 섞임, 1이면 (+)는 왼쪽·(−)는 오른쪽으로 분리(정전기 유도) */
+function createCharges(parent, cx, cy, R, maxP, maxE, markR) {
+  const plus = Array.from({ length: maxP }, () => chargeMark(parent, '+', markR));
+  const minus = Array.from({ length: maxE }, () => chargeMark(parent, '-', markR));
+  const gap = markR * 2.7;
+  const ring = (i, n, r, offDeg) => {
+    const a = ((360 * i) / n - 90 + offDeg) * (Math.PI / 180);
+    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+  };
+  return {
+    set(p, e, sep = 0) {
+      plus.forEach((g, i) => {
+        if (i >= p) { place(g, cx, cy, false); return; }
+        const m = ring(i, p, R * 0.36, 0);
+        const s = { x: cx - R * 0.62 + (i % 2) * gap, y: cy + (Math.floor(i / 2) - 1) * gap };
+        place(g, lerp(m.x, s.x, sep), lerp(m.y, s.y, sep));
+      });
+      minus.forEach((g, i) => {
+        if (i >= e) { place(g, cx, cy, false); return; }
+        const m = ring(i, e, R * 0.72, 18);
+        const s = { x: cx + R * 0.62 - (i % 2) * gap, y: cy + (Math.floor(i / 2) - 1) * gap };
+        place(g, lerp(m.x, s.x, sep), lerp(m.y, s.y, sep));
+      });
+    },
+  };
+}
+
 /* --- 장면 1: 대전 과정 --- */
 const CB = { x: 170, y: 215, r: 125 }; // 풍선 원
 const CF = { x: 430, y: 215, r: 125 }; // 털가죽 원
@@ -457,26 +485,9 @@ const targetLabelText = { rect: null, text: null };
   targetLabelText.text = el('text', { x: AT.x, y: 79, 'text-anchor': 'middle', 'dominant-baseline': 'central', fill: '#fff', 'font-size': 15, 'font-weight': 700 }, targetLabel);
 }
 
-const attractBalloonMarks = [];
-for (let k = 0; k < MAX_MOVE; k++) {
-  const g = chargeMark(sceneAttract, '-', 12);
-  const p = { x: AB.x - 30 + (k % 2) * 60, y: AB.y - 22 + Math.floor(k / 2) * 52 };
-  place(g, p.x, p.y, false);
-  g.dataset.x = p.x; g.dataset.y = p.y;
-  attractBalloonMarks.push(g);
-}
-// 대상 쪽 전하: (+)는 풍선과 가까운 왼쪽, (−)는 먼 오른쪽
-const targetPlus = [], targetMinus = [];
-const TARGET_SLOTS = [[-72, -32], [-72, 32], [-40, -64], [-40, 64]];
-for (let k = 0; k < MAX_MOVE; k++) {
-  const gp = chargeMark(sceneAttract, '+', 12);
-  const gm = chargeMark(sceneAttract, '-', 12);
-  const [dx, dy] = TARGET_SLOTS[k];
-  place(gp, AT.x + dx, AT.y + dy, false);
-  place(gm, AT.x - dx, AT.y + dy, false);
-  targetPlus.push({ g: gp, x: AT.x + dx, y: AT.y + dy });
-  targetMinus.push({ g: gm, x: AT.x - dx, y: AT.y + dy });
-}
+// 풍선과 대상 모두 양성자(+)와 전자(−)를 함께 그린다
+const attractBalloonCharges = createCharges(sceneAttract, AB.x, AB.y, AB.r, PAIRS, PAIRS + MAX_MOVE, 10);
+const attractTargetCharges = createCharges(sceneAttract, AT.x, AT.y, AT.r, PAIRS, PAIRS + MAX_MOVE, 10);
 
 const arrowL = el('line', { y1: AB.y, y2: AB.y, stroke: COLOR.accent, 'stroke-width': 6, 'stroke-linecap': 'round', 'marker-end': 'url(#arrowHead)' }, sceneAttract);
 const arrowR = el('line', { y1: AT.y, y2: AT.y, stroke: COLOR.accent, 'stroke-width': 6, 'stroke-linecap': 'round', 'marker-end': 'url(#arrowHead)' }, sceneAttract);
@@ -587,13 +598,11 @@ function renderAttract(n) {
   targetLabelText.rect.setAttribute('fill', isFur ? '#ca8a04' : '#c2410c');
   targetLabelText.text.textContent = isFur ? '털가죽' : '머리카락';
 
-  // 풍선 (−)
-  attractBalloonMarks.forEach((g, k) => place(g, +g.dataset.x, +g.dataset.y, k < n));
-
-  // 대상 전하
-  const induced = isFur ? n : Math.round(a * MAX_MOVE);
-  targetPlus.forEach((m, k) => place(m.g, m.x, m.y, k < induced));
-  targetMinus.forEach((m, k) => place(m.g, m.x, m.y, !isFur && k < induced));
+  // 풍선: 전자를 n개 얻어 (−)가 많다
+  attractBalloonCharges.set(PAIRS, PAIRS + n);
+  // 털가죽: 전자를 n개 잃어 (+)가 많다 / 머리카락: 중성이지만 풍선이 다가오면 (+)와 (−)가 갈라진다(유도)
+  if (isFur) attractTargetCharges.set(PAIRS, PAIRS - n);
+  else attractTargetCharges.set(PAIRS, PAIRS, a);
 
   // 화살표
   const len = 12 + 30 * a;
@@ -607,7 +616,7 @@ function renderAttract(n) {
   setNet(-n, n);
   netCards[0].textContent = '풍선 순전하';
   netCards[1].textContent = isFur ? '털가죽 순전하' : '머리카락 순전하';
-  if (!isFur) { netFur.textContent = '유도로 (+)/(−) 분리'; netFur.className = 'net-val mono'; }
+  if (!isFur) { netFur.textContent = '중성 (유도)'; netFur.className = 'net-val mono'; }
   sumLine.textContent = `인력의 세기 ${Math.round(a * 100)}%`;
 
   if (n === 0) {

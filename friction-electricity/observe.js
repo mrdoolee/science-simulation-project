@@ -353,28 +353,24 @@
     green: { fill: 'rgba(34,197,94,0.14)', stroke: '#22c55e', pill: '#16a34a', name: '초록 풍선' },
     red: { fill: 'rgba(239,68,68,0.14)', stroke: '#ef4444', pill: '#dc2626', name: '빨간 풍선' },
   };
-  const SLOTS4 = [[-30, -28], [30, -28], [-30, 28], [30, 28]];
-  const SLOTS8 = [[-54, -28], [-18, -28], [18, -28], [54, -28], [-54, 28], [-18, 28], [18, 28], [54, 28]];
+  // 처음(중성)에는 양성자와 전자의 수가 같다. 장갑은 원자가 더 많은 물체로 그린다.
+  const P_GLOVE = 10;
+  const P_BALLOON = 6;
 
-  /* 장면 A (1단계): 세 물체의 전하 */
+  /* 장면 A (1단계): 세 물체 모두 양성자(+)와 전자(−)를 함께 그린다 */
   const sceneA = el('g', {}, svg);
-  const A = { glove: 100, green: 300, red: 500, r: 82 };
-  const aMarks = { glove: [], green: [], red: [] };
+  const AY = 200;
+  const A = { glove: 98, green: 300, red: 502, r: 92 };
+  const aCharges = {};
   for (const key of ['glove', 'green', 'red']) {
     const c = CIRCLE[key];
-    el('circle', { cx: A[key], cy: CY, r: A.r, fill: c.fill, stroke: c.stroke, 'stroke-width': 3 }, sceneA);
-    pill(sceneA, A[key], 70, c.name, c.pill);
-    const slots = key === 'glove' ? SLOTS8 : SLOTS4;
-    slots.forEach(([dx, dy]) => {
-      const g = chargeMark(sceneA, key === 'glove' ? '+' : '-', 11);
-      place(g, A[key] + dx * 0.9, CY + dy * 0.9, false);
-      aMarks[key].push(g);
-    });
+    el('circle', { cx: A[key], cy: AY, r: A.r, fill: c.fill, stroke: c.stroke, 'stroke-width': 3 }, sceneA);
+    pill(sceneA, A[key], 55, c.name, c.pill);
+    aCharges[key] = createCharges(sceneA, A[key], AY, A.r, key === 'glove' ? P_GLOVE : P_BALLOON, 10, 9);
   }
-  const flowG = el('line', { x1: 188, x2: 214, y1: CY, y2: CY, stroke: '#a5b4fc', 'stroke-width': 5, 'stroke-linecap': 'round', 'marker-end': 'url(#obArrowA)' }, sceneA);
-  const flowR = el('line', { x1: 388, x2: 414, y1: CY, y2: CY, stroke: '#a5b4fc', 'stroke-width': 5, 'stroke-linecap': 'round', 'marker-end': 'url(#obArrowA)' }, sceneA);
-  const flowText = el('text', { x: 300, y: 335, 'text-anchor': 'middle', fill: '#a5b4fc', 'font-size': 15, 'font-weight': 700 }, sceneA);
-  flowText.textContent = '문지르면 전자(−)가 장갑 → 풍선으로 이동해요';
+  // 전자(−)의 이동 방향: 장갑 → 풍선 (원 아래쪽 곡선 화살표)
+  const flowG = el('path', { d: 'M 112 300 Q 205 362 288 300', fill: 'none', stroke: '#a5b4fc', 'stroke-width': 4, 'stroke-linecap': 'round', 'marker-end': 'url(#obArrowA)' }, sceneA);
+  const flowR = el('path', { d: 'M 120 306 Q 310 400 490 306', fill: 'none', stroke: '#a5b4fc', 'stroke-width': 4, 'stroke-linecap': 'round', 'marker-end': 'url(#obArrowA)' }, sceneA);
 
   /* 장면 B (2, 3단계): 두 물체 사이의 힘 */
   const sceneB = el('g', {}, svg);
@@ -386,9 +382,9 @@
   const bRightPill = { rect: el('rect', { x: B.right - 42, y: 55, width: 84, height: 30, rx: 15, stroke: 'rgba(255,255,255,0.4)' }, sceneB) };
   bRightPill.text = el('text', { x: B.right, y: 71, 'text-anchor': 'middle', 'dominant-baseline': 'central', fill: '#fff', 'font-size': 14, 'font-weight': 700 }, sceneB);
 
-  const bLeftMinus = SLOTS4.map(([dx, dy]) => { const g = chargeMark(sceneB, '-', 12); place(g, B.left + dx, CY + dy, false); return g; });
-  const bRightMinus = SLOTS4.map(([dx, dy]) => { const g = chargeMark(sceneB, '-', 12); place(g, B.right + dx, CY + dy, false); return g; });
-  const bRightPlus = SLOTS8.map(([dx, dy]) => { const g = chargeMark(sceneB, '+', 11); place(g, B.right + dx * 1.1, CY + dy * 1.1, false); return g; });
+  // 양쪽 모두 양성자(+)와 전자(−)를 함께 그린다 (오른쪽은 빨간 풍선 또는 면장갑)
+  const bLeftCharges = createCharges(sceneB, B.left, CY, B.r, P_BALLOON, 10, 10);
+  const bRightCharges = createCharges(sceneB, B.right, CY, B.r, P_GLOVE, 10, 10);
 
   const mkArrow = (x1, x2, y) => el('line', { x1, x2, y1: y, y2: y, 'stroke-width': 6, 'stroke-linecap': 'round' }, sceneB);
   const arrows = [mkArrow(0, 0, CY), mkArrow(0, 0, CY)];
@@ -424,9 +420,9 @@
     sceneB.style.display = st.step === 1 ? 'none' : '';
 
     if (st.step === 1) {
-      aMarks.glove.forEach((g, k) => { g.style.display = k < q.glove ? '' : 'none'; });
-      aMarks.green.forEach((g, k) => { g.style.display = k < q.green ? '' : 'none'; });
-      aMarks.red.forEach((g, k) => { g.style.display = k < q.red ? '' : 'none'; });
+      aCharges.glove.set(P_GLOVE, P_GLOVE - q.glove);
+      aCharges.green.set(P_BALLOON, P_BALLOON + q.green);
+      aCharges.red.set(P_BALLOON, P_BALLOON + q.red);
       flowG.style.opacity = rubbing || q.green > 0 ? 1 : 0.2;
       flowR.style.opacity = rubbing || q.red > 0 ? 1 : 0.2;
     } else {
@@ -443,9 +439,9 @@
       bRightPill.rect.setAttribute('fill', right.pill);
       bRightPill.text.textContent = right.name;
 
-      bLeftMinus.forEach((g, k) => { g.style.display = k < q.green ? '' : 'none'; });
-      bRightMinus.forEach((g, k) => { g.style.display = isRed && k < q.red ? '' : 'none'; });
-      bRightPlus.forEach((g, k) => { g.style.display = !isRed && k < q.glove ? '' : 'none'; });
+      bLeftCharges.set(P_BALLOON, P_BALLOON + q.green);
+      if (isRed) bRightCharges.set(P_BALLOON, P_BALLOON + q.red);
+      else bRightCharges.set(P_GLOVE, P_GLOVE - q.glove);
 
       // 화살표: 같은 부호는 밀어냄(가운데에서 바깥쪽), 다른 부호는 끌어당김(바깥에서 가운데)
       const len = 12 + 24 * a;
