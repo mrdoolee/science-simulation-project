@@ -145,7 +145,40 @@
       </section>
     </main>
 
-    <footer class="footer">© 2026 과학 시뮬레이션 · 중학교 과학 · 마찰전기</footer>
+    <footer class="footer">
+      © 2026 Designed &amp; Developed by
+      <button type="button" id="creditBtn" class="credit-link" aria-haspopup="dialog" aria-controls="creditModal">두리쌤</button>.
+      All rights reserved.
+    </footer>
+  </div>
+
+  <!-- 제작자 안내 모달 (표시 전용: 시뮬레이션 상태와 무관) -->
+  <div id="creditModal" class="modal" hidden>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="creditTitle">
+      <button type="button" id="creditClose" class="modal-close" aria-label="닫기">✕</button>
+
+      <div class="modal-body">
+      <section class="modal-card">
+        <h2 id="creditTitle">✨ 제작: 두리쌤</h2>
+        <h3>📌 이용 조건</h3>
+        <ul>
+          <li>교육 목적으로 자유롭게 사용하실 수 있습니다.</li>
+          <li>재배포 시 출처(제작자 표기)를 유지해주세요.</li>
+          <li>코드를 임의로 수정한 버전을 다시 배포하지 말아주세요.</li>
+          <li>수정이 필요하시면 아래 연락처로 요청해주세요.</li>
+        </ul>
+      </section>
+
+      <section class="modal-card">
+        <h3>📷 문의</h3>
+        <ul>
+          <li>Instagram: <a href="https://www.instagram.com/trdoolee" target="_blank" rel="noopener noreferrer">trdoolee</a></li>
+          <li>Blog: <a href="https://blog.naver.com/trdoolee" target="_blank" rel="noopener noreferrer">blog.naver.com/trdoolee</a></li>
+        </ul>
+        <p class="modal-note">간단한 질문 위주로 답변드리며, 답변이 늦어질 수 있습니다.</p>
+      </section>
+      </div>
+    </div>
   </div>
   <script src="main.js"></script>
   <script src="observe.js"></script>
