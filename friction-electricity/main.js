@@ -394,65 +394,60 @@ const polar = (cx, cy, r, deg) => ({
   y: cy + r * Math.sin((deg * Math.PI) / 180),
 });
 
-/* 시드 고정 난수: 새로고침해도 같은 배치가 나온다 */
-function seededRandom(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/* 원 안에서 서로 겹치지 않게 n개의 자리를 무작위로 뽑는다.
-   avoid: 피해야 할 점들, accept: 허용 영역 조건 */
-function randomSlots(cx, cy, R, n, markR, seed, { avoid = [], accept = () => true } = {}) {
-  const rnd = seededRandom(seed);
-  const rin = R - markR - 4;
-  let minD = markR * 2.5;
-  const pts = [];
-  for (let tries = 1; pts.length < n && tries < 40000; tries++) {
-    const r = rin * Math.sqrt(rnd());
-    const a = rnd() * Math.PI * 2;
-    const p = { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
-    if (accept(p) && pts.every((q) => Math.hypot(p.x - q.x, p.y - q.y) >= minD) &&
-        avoid.every((q) => Math.hypot(p.x - q.x, p.y - q.y) >= minD)) pts.push(p);
-    if (tries % 500 === 0) minD *= 0.94; // 자리가 모자라면 간격을 조금 줄인다
+/* 정사각 격자 자리: (i+j)가 짝수인 자리는 양성자(+), 홀수인 자리는 전자(−) → + − + − 가 번갈아 놓인다.
+   양성자 자리(A)와 전자 자리(B)는 각각 중심에서 가까운 순서로 정렬해서 돌려준다.
+   원 안에 A는 needA개 이상, B는 needB개 이상 들어가는 가장 넓은 간격을 고른다. */
+function latticeSites(cx, cy, R, markR, needA, needB) {
+  const rin = R - markR - 3;
+  const minS = markR * 2 + 4;
+  let found = null;
+  for (let s = Math.floor(rin / 1.5); s >= minS; s--) {
+    const A = [], B = [];
+    const m = Math.floor(rin / s);
+    for (let j = -m; j <= m; j++) {
+      for (let i = -m; i <= m; i++) {
+        const x = i * s, y = j * s;
+        const d = Math.hypot(x, y);
+        if (d > rin) continue;
+        ((i + j) % 2 === 0 ? A : B).push({ x: cx + x, y: cy + y, d, a: Math.atan2(y, x) });
+      }
+    }
+    const byDist = (u, v) => u.d - v.d || u.a - v.a;
+    A.sort(byDist); B.sort(byDist);
+    found = { A, B, s };
+    if (A.length >= needA && B.length >= needB) break;
   }
-  return pts;
+  return found;
 }
 
-function shuffled(arr, seed) {
-  const rnd = seededRandom(seed);
-  const out = arr.slice();
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rnd() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
+/* 원 안에 양성자(+)와 전자(−)를 격자 모양으로 번갈아 그린다. 양성자는 항상 같은 자리에 고정.
+   set(p, e, sep, hide): 양성자 p개, 전자 e개를 보인다. hide는 숨길 전자 번호 집합.
+   sep 0이면 전자가 중심 쪽에 있고, 1이면 전자만 오른쪽(풍선 반대쪽) 전자 자리로 이동한다(정전기 유도). */
+function createCharges(parent, cx, cy, R, maxP, maxE, markR) {
+  const lat = latticeSites(cx, cy, R, markR, maxP, maxE);
+  const pPos = lat.A.slice(0, maxP);
+  const ePos = lat.B.slice(0, maxE);
+  // 유도: 처음 전자들이 오른쪽에서 가장 먼 전자 자리로 옮겨 간다
+  const nPol = Math.min(maxP, maxE);
+  const targets = lat.B.slice()
+    .sort((u, v) => v.x - u.x || Math.abs(u.y - cy) - Math.abs(v.y - cy))
+    .slice(0, nPol)
+    .sort((u, v) => u.x - v.x || u.y - v.y);
+  const rank = Array.from({ length: nPol }, (_, i) => i)
+    .sort((i, j) => ePos[i].x - ePos[j].x || ePos[i].y - ePos[j].y);
+  const polarPos = ePos.slice();
+  rank.forEach((ei, r) => { polarPos[ei] = targets[r]; });
 
-/* 원 안에 양성자(+)와 전자(−)를 무작위로 섞어서 그린다. (양성자는 항상 같은 자리에 고정)
-   p, e: 양성자·전자 개수 / sep: 0이면 전자가 골고루 퍼져 있고,
-   1이면 전자만 오른쪽(풍선 반대쪽)으로 치우친다 (정전기 유도) */
-function createCharges(parent, cx, cy, R, maxP, maxE, markR, seed = 1) {
-  const slots = shuffled(randomSlots(cx, cy, R, maxP + maxE, markR, seed), seed * 7 + 3);
-  const pPos = slots.slice(0, maxP);
-  const ePos = slots.slice(maxP);
-  const polarPos = randomSlots(cx, cy, R, maxE, markR, seed + 11, {
-    avoid: pPos,
-    accept: (p) => p.x > cx + R * 0.1,
-  });
   const plus = pPos.map(() => chargeMark(parent, '+', markR));
   const minus = ePos.map(() => chargeMark(parent, '-', markR));
   return {
-    set(p, e, sep = 0) {
+    pPos,
+    ePos,
+    set(p, e, sep = 0, hide = null) {
       plus.forEach((g, i) => place(g, pPos[i].x, pPos[i].y, i < p));
       minus.forEach((g, i) => {
-        const t = polarPos[i] || ePos[i];
-        place(g, lerp(ePos[i].x, t.x, sep), lerp(ePos[i].y, t.y, sep), i < e);
+        const t = polarPos[i];
+        place(g, lerp(ePos[i].x, t.x, sep), lerp(ePos[i].y, t.y, sep), i < e && !(hide && hide.has(i)));
       });
     },
   };
@@ -474,18 +469,18 @@ function labelPill(parent, x, y, text, fill) {
   t.textContent = text;
 }
 
-// 양성자(+)와 전자(−)를 무작위로 섞어 배치한다. 양성자는 고정, 이동하는 것은 전자뿐.
-// 풍선: (+) 6개, (−) 6개 + 털가죽에서 올 전자가 들어갈 빈자리 4개
-const slotsB = shuffled(randomSlots(CB.x, CB.y, CB.r, PAIRS * 2 + MAX_MOVE, 11, 101), 5);
-slotsB.slice(0, PAIRS).forEach((p) => place(chargeMark(sceneCharge, '+', 11), p.x, p.y));
-slotsB.slice(PAIRS, PAIRS * 2).forEach((p) => place(chargeMark(sceneCharge, '-', 10), p.x, p.y));
+// 양성자(+)와 전자(−)를 격자 모양으로 번갈아 배치한다. 양성자는 고정, 이동하는 것은 전자뿐.
+// 풍선과 털가죽은 같은 간격의 격자를 쓴다 (풍선에는 털가죽에서 올 전자 자리 4개가 더 필요).
+const latB = latticeSites(CB.x, CB.y, CB.r, 11, PAIRS, PAIRS + MAX_MOVE);
+latB.A.slice(0, PAIRS).forEach((p) => place(chargeMark(sceneCharge, '+', 11), p.x, p.y));
+latB.B.slice(0, PAIRS).forEach((p) => place(chargeMark(sceneCharge, '-', 10), p.x, p.y));
 // 도착 자리는 털가죽과 가까운 오른쪽부터
-const arriveSlots = slotsB.slice(PAIRS * 2).sort((a, b) => b.x - a.x);
+const arriveSlots = latB.B.slice(PAIRS, PAIRS + MAX_MOVE).sort((u, v) => v.x - u.x);
 
-// 털가죽: (+) 6개, (−) 6개. 풍선과 가까운 왼쪽 전자부터 이동한다.
-const slotsF = shuffled(randomSlots(CF.x, CF.y, CF.r, PAIRS * 2, 11, 202), 9);
-slotsF.slice(0, PAIRS).forEach((p) => place(chargeMark(sceneCharge, '+', 11), p.x, p.y));
-const furElectrons = slotsF.slice(PAIRS).sort((a, b) => a.x - b.x).map((start, i) => {
+const latF = latticeSites(CF.x, CF.y, CF.r, 11, PAIRS, PAIRS + MAX_MOVE);
+latF.A.slice(0, PAIRS).forEach((p) => place(chargeMark(sceneCharge, '+', 11), p.x, p.y));
+// 털가죽: 풍선과 가까운 왼쪽 전자부터 이동한다
+const furElectrons = latF.B.slice(0, PAIRS).sort((u, v) => u.x - v.x).map((start, i) => {
   const g = chargeMark(sceneCharge, '-', 10);
   place(g, start.x, start.y);
   const slot = i < MAX_MOVE ? arriveSlots[i] : null;
@@ -513,8 +508,8 @@ const targetLabelText = { rect: null, text: null };
 }
 
 // 풍선과 대상 모두 양성자(+)와 전자(−)를 함께 그린다
-const attractBalloonCharges = createCharges(sceneAttract, AB.x, AB.y, AB.r, PAIRS, PAIRS + MAX_MOVE, 10, 31);
-const attractTargetCharges = createCharges(sceneAttract, AT.x, AT.y, AT.r, PAIRS, PAIRS + MAX_MOVE, 10, 32);
+const attractBalloonCharges = createCharges(sceneAttract, AB.x, AB.y, AB.r, PAIRS, PAIRS + MAX_MOVE, 10);
+const attractTargetCharges = createCharges(sceneAttract, AT.x, AT.y, AT.r, PAIRS, PAIRS + MAX_MOVE, 10);
 
 const arrowL = el('line', { y1: AB.y, y2: AB.y, stroke: COLOR.accent, 'stroke-width': 6, 'stroke-linecap': 'round', 'marker-end': 'url(#arrowHead)' }, sceneAttract);
 const arrowR = el('line', { y1: AT.y, y2: AT.y, stroke: COLOR.accent, 'stroke-width': 6, 'stroke-linecap': 'round', 'marker-end': 'url(#arrowHead)' }, sceneAttract);
