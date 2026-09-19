@@ -20,6 +20,8 @@
 
 * { box-sizing: border-box; }
 
+[hidden] { display: none !important; }
+
 html, body { margin: 0; }
 
 body {
@@ -180,6 +182,58 @@ body {
 }
 .tab:hover { color: var(--text); }
 .tab.is-active { background: var(--accent); color: #fff; }
+
+/* 실험 단계 탭 (.tab과 같은 모양, main.js의 .tab 선택과 분리) */
+.step-tab {
+  flex: 1;
+  font: inherit; font-size: 12px; font-weight: 600;
+  padding: 7px 4px;
+  border-radius: 8px; border: 0;
+  color: var(--muted); background: transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.step-tab:hover { color: var(--text); }
+.step-tab.is-active { background: var(--accent); color: #fff; }
+.step-tab:focus-visible, .mode-tab:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
+
+/* 실험 선택 메뉴 */
+.modes { display: flex; gap: 8px; flex-wrap: wrap; }
+.mode-tab {
+  font: inherit; font-size: 13px; font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.mode-tab:hover { color: var(--text); background: rgba(255, 255, 255, 0.1); }
+.mode-tab.is-active {
+  color: #fff;
+  background: var(--accent);
+  border-color: rgba(165, 180, 252, 0.6);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.45);
+}
+
+.gauge-row.gap { margin-top: 8px; }
+.net-cards.three { grid-template-columns: repeat(3, 1fr); }
+.net-cards.three .net-card { padding: 8px 10px; }
+
+/* 관찰 기록 */
+.obs-log { display: grid; gap: 6px; }
+.obs-item {
+  display: flex; gap: 8px; align-items: center;
+  padding: 7px 12px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--card-edge);
+  font-size: 12px; color: var(--muted);
+}
+.obs-item b { color: var(--text); margin-left: 4px; }
+.obs-item.is-done { border-color: rgba(52, 211, 153, 0.5); background: rgba(16, 185, 129, 0.12); }
+.obs-item.is-done .obs-mark { color: #6ee7b7; }
 
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {

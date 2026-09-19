@@ -4,6 +4,6 @@
 
 | 시뮬레이션 | 폴더 | 내용 |
 |---|---|---|
-| 마찰전기 대전 | [friction-electricity](friction-electricity) | 풍선과 털가죽을 문질러 전자가 이동하고 대전되는 과정 |
+| 마찰전기 | [friction-electricity](friction-electricity) | 실험 1 마찰 전기 현상 관찰하기, 실험 2 풍선과 털가죽 대전 과정 |
 
 디자인 참고: https://ionformation.vercel.app/

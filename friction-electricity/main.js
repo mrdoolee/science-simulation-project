@@ -634,13 +634,18 @@ function reset() {
   hint.classList.remove('is-hidden');
   setTab('charge');
 }
-document.getElementById('resetBtn').addEventListener('click', reset);
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!document.getElementById('expBalloon').hidden) reset();
+});
 
 let last = now();
+const expBalloonEl = document.getElementById('expBalloon');
+
 function tick() {
   const t = now();
   const dt = Math.min(0.05, (t - last) / 1000);
   last = t;
+  if (expBalloonEl.hidden) { requestAnimationFrame(tick); return; }
 
   updatePull();
   driftBalloon(dt);
