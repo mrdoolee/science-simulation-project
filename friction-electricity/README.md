@@ -23,7 +23,7 @@ python -m http.server 5173
 
 ## 배포
 
-Vercel 정적 배포: <!-- 배포 URL -->
+Vercel 정적 배포: https://friction-electricity.vercel.app
 
 ## 구성
 
