@@ -357,20 +357,25 @@
   const P_GLOVE = 10;
   const P_BALLOON = 6;
 
-  /* 장면 A (1단계): 세 물체 모두 양성자(+)와 전자(−)를 함께 그린다 */
+  /* 장면 A (1단계): 면장갑 ─┬─ 초록 풍선
+                            └─ 빨간 풍선  (모두 양성자(+)와 전자(−)를 무작위로 섞어서 그림) */
   const sceneA = el('g', {}, svg);
-  const AY = 200;
-  const A = { glove: 98, green: 300, red: 502, r: 92 };
+  const A = {
+    glove: { x: 125, y: 200, r: 105, p: P_GLOVE, mark: 9, seed: 41 },
+    green: { x: 345, y: 108, r: 72, p: P_BALLOON, mark: 8, seed: 42 },
+    red: { x: 345, y: 292, r: 72, p: P_BALLOON, mark: 8, seed: 43 },
+  };
+  // 연결선(화살표 아님): 장갑에서 두 풍선으로 갈라지는 모양
+  el('path', { d: 'M 230 200 H 252 M 252 108 V 292 M 252 108 H 273 M 252 292 H 273', fill: 'none', stroke: '#64748b', 'stroke-width': 3, 'stroke-linecap': 'round' }, sceneA);
   const aCharges = {};
   for (const key of ['glove', 'green', 'red']) {
     const c = CIRCLE[key];
-    el('circle', { cx: A[key], cy: AY, r: A.r, fill: c.fill, stroke: c.stroke, 'stroke-width': 3 }, sceneA);
-    pill(sceneA, A[key], 55, c.name, c.pill);
-    aCharges[key] = createCharges(sceneA, A[key], AY, A.r, key === 'glove' ? P_GLOVE : P_BALLOON, 10, 9);
+    const o = A[key];
+    el('circle', { cx: o.x, cy: o.y, r: o.r, fill: c.fill, stroke: c.stroke, 'stroke-width': 3 }, sceneA);
+    if (key === 'glove') pill(sceneA, o.x, 62, c.name, c.pill);
+    else pill(sceneA, 487, o.y, c.name, c.pill);
+    aCharges[key] = createCharges(sceneA, o.x, o.y, o.r, o.p, 10, o.mark, o.seed);
   }
-  // 전자(−)의 이동 방향: 장갑 → 풍선 (원 아래쪽 곡선 화살표)
-  const flowG = el('path', { d: 'M 112 300 Q 205 362 288 300', fill: 'none', stroke: '#a5b4fc', 'stroke-width': 4, 'stroke-linecap': 'round', 'marker-end': 'url(#obArrowA)' }, sceneA);
-  const flowR = el('path', { d: 'M 120 306 Q 310 400 490 306', fill: 'none', stroke: '#a5b4fc', 'stroke-width': 4, 'stroke-linecap': 'round', 'marker-end': 'url(#obArrowA)' }, sceneA);
 
   /* 장면 B (2, 3단계): 두 물체 사이의 힘 */
   const sceneB = el('g', {}, svg);
@@ -383,8 +388,8 @@
   bRightPill.text = el('text', { x: B.right, y: 71, 'text-anchor': 'middle', 'dominant-baseline': 'central', fill: '#fff', 'font-size': 14, 'font-weight': 700 }, sceneB);
 
   // 양쪽 모두 양성자(+)와 전자(−)를 함께 그린다 (오른쪽은 빨간 풍선 또는 면장갑)
-  const bLeftCharges = createCharges(sceneB, B.left, CY, B.r, P_BALLOON, 10, 10);
-  const bRightCharges = createCharges(sceneB, B.right, CY, B.r, P_GLOVE, 10, 10);
+  const bLeftCharges = createCharges(sceneB, B.left, CY, B.r, P_BALLOON, 10, 10, 51);
+  const bRightCharges = createCharges(sceneB, B.right, CY, B.r, P_GLOVE, 10, 10, 52);
 
   const mkArrow = (x1, x2, y) => el('line', { x1, x2, y1: y, y2: y, 'stroke-width': 6, 'stroke-linecap': 'round' }, sceneB);
   const arrows = [mkArrow(0, 0, CY), mkArrow(0, 0, CY)];
@@ -414,7 +419,6 @@
 
   function renderRight() {
     const q = charges();
-    const rubbing = now() - st.lastRubAt < 500;
 
     sceneA.style.display = st.step === 1 ? '' : 'none';
     sceneB.style.display = st.step === 1 ? 'none' : '';
@@ -423,8 +427,6 @@
       aCharges.glove.set(P_GLOVE, P_GLOVE - q.glove);
       aCharges.green.set(P_BALLOON, P_BALLOON + q.green);
       aCharges.red.set(P_BALLOON, P_BALLOON + q.red);
-      flowG.style.opacity = rubbing || q.green > 0 ? 1 : 0.2;
-      flowR.style.opacity = rubbing || q.red > 0 ? 1 : 0.2;
     } else {
       const isRed = st.step === 2; // 2단계: 풍선 vs 풍선, 3단계: 풍선 vs 장갑
       const right = isRed ? CIRCLE.red : CIRCLE.glove;

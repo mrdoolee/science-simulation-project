@@ -394,29 +394,65 @@ const polar = (cx, cy, r, deg) => ({
   y: cy + r * Math.sin((deg * Math.PI) / 180),
 });
 
-/* 원 안에 양성자(+)와 전자(−)를 함께 그린다.
-   p, e: 양성자·전자 개수 / sep: 0이면 골고루 섞임, 1이면 (+)는 왼쪽·(−)는 오른쪽으로 분리(정전기 유도) */
-function createCharges(parent, cx, cy, R, maxP, maxE, markR) {
-  const plus = Array.from({ length: maxP }, () => chargeMark(parent, '+', markR));
-  const minus = Array.from({ length: maxE }, () => chargeMark(parent, '-', markR));
-  const gap = markR * 2.7;
-  const ring = (i, n, r, offDeg) => {
-    const a = ((360 * i) / n - 90 + offDeg) * (Math.PI / 180);
-    return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+/* 시드 고정 난수: 새로고침해도 같은 배치가 나온다 */
+function seededRandom(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+/* 원 안에서 서로 겹치지 않게 n개의 자리를 무작위로 뽑는다.
+   avoid: 피해야 할 점들, accept: 허용 영역 조건 */
+function randomSlots(cx, cy, R, n, markR, seed, { avoid = [], accept = () => true } = {}) {
+  const rnd = seededRandom(seed);
+  const rin = R - markR - 4;
+  let minD = markR * 2.5;
+  const pts = [];
+  for (let tries = 1; pts.length < n && tries < 40000; tries++) {
+    const r = rin * Math.sqrt(rnd());
+    const a = rnd() * Math.PI * 2;
+    const p = { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+    if (accept(p) && pts.every((q) => Math.hypot(p.x - q.x, p.y - q.y) >= minD) &&
+        avoid.every((q) => Math.hypot(p.x - q.x, p.y - q.y) >= minD)) pts.push(p);
+    if (tries % 500 === 0) minD *= 0.94; // 자리가 모자라면 간격을 조금 줄인다
+  }
+  return pts;
+}
+
+function shuffled(arr, seed) {
+  const rnd = seededRandom(seed);
+  const out = arr.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/* 원 안에 양성자(+)와 전자(−)를 무작위로 섞어서 그린다. (양성자는 항상 같은 자리에 고정)
+   p, e: 양성자·전자 개수 / sep: 0이면 전자가 골고루 퍼져 있고,
+   1이면 전자만 오른쪽(풍선 반대쪽)으로 치우친다 (정전기 유도) */
+function createCharges(parent, cx, cy, R, maxP, maxE, markR, seed = 1) {
+  const slots = shuffled(randomSlots(cx, cy, R, maxP + maxE, markR, seed), seed * 7 + 3);
+  const pPos = slots.slice(0, maxP);
+  const ePos = slots.slice(maxP);
+  const polarPos = randomSlots(cx, cy, R, maxE, markR, seed + 11, {
+    avoid: pPos,
+    accept: (p) => p.x > cx + R * 0.1,
+  });
+  const plus = pPos.map(() => chargeMark(parent, '+', markR));
+  const minus = ePos.map(() => chargeMark(parent, '-', markR));
   return {
     set(p, e, sep = 0) {
-      plus.forEach((g, i) => {
-        if (i >= p) { place(g, cx, cy, false); return; }
-        const m = ring(i, p, R * 0.36, 0);
-        const s = { x: cx - R * 0.62 + (i % 2) * gap, y: cy + (Math.floor(i / 2) - 1) * gap };
-        place(g, lerp(m.x, s.x, sep), lerp(m.y, s.y, sep));
-      });
+      plus.forEach((g, i) => place(g, pPos[i].x, pPos[i].y, i < p));
       minus.forEach((g, i) => {
-        if (i >= e) { place(g, cx, cy, false); return; }
-        const m = ring(i, e, R * 0.72, 18);
-        const s = { x: cx + R * 0.62 - (i % 2) * gap, y: cy + (Math.floor(i / 2) - 1) * gap };
-        place(g, lerp(m.x, s.x, sep), lerp(m.y, s.y, sep));
+        const t = polarPos[i] || ePos[i];
+        place(g, lerp(ePos[i].x, t.x, sep), lerp(ePos[i].y, t.y, sep), i < e);
       });
     },
   };
@@ -438,30 +474,21 @@ function labelPill(parent, x, y, text, fill) {
   t.textContent = text;
 }
 
-// (+) 고정 전하: 각 원 안쪽 육각형 배치
-const plusB = [], plusF = [];
-for (let k = 0; k < PAIRS; k++) {
-  const pb = polar(CB.x, CB.y, 45, 30 + 60 * k);
-  const pf = polar(CF.x, CF.y, 45, 30 + 60 * k);
-  const gb = chargeMark(sceneCharge, '+', 11);
-  const gf = chargeMark(sceneCharge, '+', 11);
-  place(gb, pb.x, pb.y);
-  place(gf, pf.x, pf.y);
-  plusB.push(gb); plusF.push(gf);
-}
-// 풍선 (−) 고유 전자
-for (let k = 0; k < PAIRS; k++) {
-  const p = polar(CB.x, CB.y, 88, 60 * k);
-  place(chargeMark(sceneCharge, '-', 10), p.x, p.y);
-}
-// 털가죽 (−) 전자: 왼쪽(풍선 쪽)부터 이동 대상 → 정렬 순서 [180,120,240,60,300,0]
-const FUR_ORDER = [180, 120, 240, 60, 300, 0];
-const BALLOON_SLOTS = [330, 30, 90, 270];
-const furElectrons = FUR_ORDER.map((deg, i) => {
-  const start = polar(CF.x, CF.y, 88, deg);
+// 양성자(+)와 전자(−)를 무작위로 섞어 배치한다. 양성자는 고정, 이동하는 것은 전자뿐.
+// 풍선: (+) 6개, (−) 6개 + 털가죽에서 올 전자가 들어갈 빈자리 4개
+const slotsB = shuffled(randomSlots(CB.x, CB.y, CB.r, PAIRS * 2 + MAX_MOVE, 11, 101), 5);
+slotsB.slice(0, PAIRS).forEach((p) => place(chargeMark(sceneCharge, '+', 11), p.x, p.y));
+slotsB.slice(PAIRS, PAIRS * 2).forEach((p) => place(chargeMark(sceneCharge, '-', 10), p.x, p.y));
+// 도착 자리는 털가죽과 가까운 오른쪽부터
+const arriveSlots = slotsB.slice(PAIRS * 2).sort((a, b) => b.x - a.x);
+
+// 털가죽: (+) 6개, (−) 6개. 풍선과 가까운 왼쪽 전자부터 이동한다.
+const slotsF = shuffled(randomSlots(CF.x, CF.y, CF.r, PAIRS * 2, 11, 202), 9);
+slotsF.slice(0, PAIRS).forEach((p) => place(chargeMark(sceneCharge, '+', 11), p.x, p.y));
+const furElectrons = slotsF.slice(PAIRS).sort((a, b) => a.x - b.x).map((start, i) => {
   const g = chargeMark(sceneCharge, '-', 10);
   place(g, start.x, start.y);
-  const slot = i < MAX_MOVE ? polar(CB.x, CB.y, 88, BALLOON_SLOTS[i]) : null;
+  const slot = i < MAX_MOVE ? arriveSlots[i] : null;
   return { g, start, slot, bow: i % 2 === 0 ? -55 : 55 };
 });
 
@@ -486,8 +513,8 @@ const targetLabelText = { rect: null, text: null };
 }
 
 // 풍선과 대상 모두 양성자(+)와 전자(−)를 함께 그린다
-const attractBalloonCharges = createCharges(sceneAttract, AB.x, AB.y, AB.r, PAIRS, PAIRS + MAX_MOVE, 10);
-const attractTargetCharges = createCharges(sceneAttract, AT.x, AT.y, AT.r, PAIRS, PAIRS + MAX_MOVE, 10);
+const attractBalloonCharges = createCharges(sceneAttract, AB.x, AB.y, AB.r, PAIRS, PAIRS + MAX_MOVE, 10, 31);
+const attractTargetCharges = createCharges(sceneAttract, AT.x, AT.y, AT.r, PAIRS, PAIRS + MAX_MOVE, 10, 32);
 
 const arrowL = el('line', { y1: AB.y, y2: AB.y, stroke: COLOR.accent, 'stroke-width': 6, 'stroke-linecap': 'round', 'marker-end': 'url(#arrowHead)' }, sceneAttract);
 const arrowR = el('line', { y1: AT.y, y2: AT.y, stroke: COLOR.accent, 'stroke-width': 6, 'stroke-linecap': 'round', 'marker-end': 'url(#arrowHead)' }, sceneAttract);
@@ -626,7 +653,7 @@ function renderAttract(n) {
   } else if (isFur) {
     caption.textContent = '(−)전하로 대전된 풍선과 (+)전하로 대전된 털가죽은 서로 끌어당겨요.';
   } else {
-    caption.textContent = '(−)로 대전된 풍선이 가까이 오면 머리카락의 (+)전하는 풍선 쪽으로 끌려오고 (−)전하는 멀어져요. 가까운 (+)가 더 세게 당겨서 머리카락이 풍선에 붙어요.';
+    caption.textContent = '양성자(+)는 움직이지 못해요. 대신 머리카락의 전자(−)가 풍선의 (−)전하에게 밀려 멀어지고, 풍선 쪽에는 (+)가 더 많아져 서로 끌어당겨요. 그래서 머리카락이 풍선에 붙어요.';
   }
 }
 
