@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>마찰전기 대전 시뮬레이션</title>
+  <meta name="description" content="풍선과 털가죽을 문지르면 전자가 이동하며 대전되는 과정을 살펴보는 중학교 과학 시뮬레이션">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">⚡</div>
+        <div>
+          <h1>마찰전기 대전 시뮬레이션</h1>
+          <p>풍선과 털가죽을 문지를 때 전자가 이동하는 모습을 살펴봐요</p>
+        </div>
+      </div>
+      <button id="resetBtn" class="btn btn-primary" type="button">↺ 다시 하기</button>
+    </header>
+
+    <main class="split">
+      <!-- 왼쪽: 문지르기 -->
+      <section class="panel" aria-labelledby="leftTitle">
+        <div class="panel-head">
+          <h2 id="leftTitle"><span class="dot dot-amber"></span>문지르기</h2>
+          <span class="tag">드래그로 조작</span>
+        </div>
+
+        <div class="gauge-card">
+          <div class="gauge-row">
+            <span>마찰량</span>
+            <span id="gaugeLabel" class="mono">0%</span>
+          </div>
+          <div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="gauge">
+            <div id="gaugeFill" class="gauge-fill"></div>
+          </div>
+        </div>
+
+        <div class="stage stage-left">
+          <canvas id="rubCanvas" width="640" height="500"
+                  aria-label="풍선을 드래그해서 털가죽에 문지르는 화면"></canvas>
+          <div id="hint" class="hint">🎈 풍선을 잡고 털가죽 위에서 문질러 보세요</div>
+        </div>
+      </section>
+
+      <!-- 오른쪽: 전자의 이동 -->
+      <section class="panel" aria-labelledby="rightTitle">
+        <div class="panel-head">
+          <h2 id="rightTitle"><span class="dot dot-indigo"></span>전자의 이동</h2>
+          <span id="chargedBadge" class="tag tag-ok" hidden>충분히 대전되었어요!</span>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button class="tab is-active" role="tab" data-tab="charge" aria-selected="true">① 대전 과정</button>
+          <button class="tab" role="tab" data-tab="fur" aria-selected="false">② 털가죽에 끌림</button>
+          <button class="tab" role="tab" data-tab="hair" aria-selected="false">③ 머리카락에 끌림</button>
+        </div>
+
+        <div id="phaseChips" class="chips" aria-live="polite">
+          <span class="chip" data-phase="before">마찰하기 전</span>
+          <span class="chip" data-phase="during">마찰하는 중</span>
+          <span class="chip" data-phase="after">마찰한 후</span>
+        </div>
+
+        <div class="stage stage-right">
+          <svg id="rightSvg" viewBox="0 0 600 400" role="img" aria-label="전자가 이동하는 모습"></svg>
+        </div>
+
+        <div id="netCards" class="net-cards">
+          <div class="net-card">
+            <span class="net-name">풍선</span>
+            <span id="netBalloon" class="net-val mono">0</span>
+          </div>
+          <div class="net-card">
+            <span class="net-name">털가죽</span>
+            <span id="netFur" class="net-val mono">0</span>
+          </div>
+        </div>
+        <div id="sumLine" class="sum-line mono"></div>
+        <p id="caption" class="caption" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <footer class="footer">© 2026 과학 시뮬레이션 · 중학교 과학 · 마찰전기</footer>
+  </div>
+  <script src="main.js"></script>
+</body>
+</html>
