@@ -7,3 +7,8 @@
 | 마찰전기 | [friction-electricity](friction-electricity) | 실험 1 마찰 전기 현상 관찰하기, 실험 2 풍선과 털가죽 대전 과정 |
 
 디자인 참고: https://ionformation.vercel.app/
+
+## 문서
+
+- [제작 과정 정리](docs/PROCESS.md)
+- [프로젝트 하네스 규칙](CLAUDE.md)
