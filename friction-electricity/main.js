@@ -427,14 +427,16 @@ function createCharges(parent, cx, cy, R, maxP, maxE, markR) {
   const lat = latticeSites(cx, cy, R, markR, maxP, maxE);
   const pPos = lat.A.slice(0, maxP);
   const ePos = lat.B.slice(0, maxE);
-  // 유도: 처음 전자들이 오른쪽에서 가장 먼 전자 자리로 옮겨 간다
+  // 유도: 처음 nPol개 전자는 오른쪽(풍선 반대쪽) 원 가장자리로 크게 이동한다. 양성자는 그대로.
   const nPol = Math.min(maxP, maxE);
-  const targets = lat.B.slice()
-    .sort((u, v) => v.x - u.x || Math.abs(u.y - cy) - Math.abs(v.y - cy))
-    .slice(0, nPol)
-    .sort((u, v) => u.x - v.x || u.y - v.y);
+  const rEdge = R - markR - 4;
+  const targets = Array.from({ length: nPol }, (_, i) => {
+    const deg = nPol === 1 ? 0 : -62 + (124 * i) / (nPol - 1);
+    const a = (deg * Math.PI) / 180;
+    return { x: cx + rEdge * Math.cos(a), y: cy + rEdge * Math.sin(a) };
+  }); // 위에서 아래 순서
   const rank = Array.from({ length: nPol }, (_, i) => i)
-    .sort((i, j) => ePos[i].x - ePos[j].x || ePos[i].y - ePos[j].y);
+    .sort((i, j) => ePos[i].y - ePos[j].y || ePos[i].x - ePos[j].x);
   const polarPos = ePos.slice();
   rank.forEach((ei, r) => { polarPos[ei] = targets[r]; });
 
@@ -509,12 +511,16 @@ const targetLabelText = { rect: null, text: null };
 
 // 풍선과 대상 모두 양성자(+)와 전자(−)를 함께 그린다
 const attractBalloonCharges = createCharges(sceneAttract, AB.x, AB.y, AB.r, PAIRS, PAIRS + MAX_MOVE, 10);
-const attractTargetCharges = createCharges(sceneAttract, AT.x, AT.y, AT.r, PAIRS, PAIRS + MAX_MOVE, 10);
+const attractTargetCharges = createCharges(sceneAttract, AT.x, AT.y, AT.r, PAIRS, PAIRS, 10);
 
 const arrowL = el('line', { y1: AB.y, y2: AB.y, stroke: COLOR.accent, 'stroke-width': 6, 'stroke-linecap': 'round', 'marker-end': 'url(#arrowHead)' }, sceneAttract);
 const arrowR = el('line', { y1: AT.y, y2: AT.y, stroke: COLOR.accent, 'stroke-width': 6, 'stroke-linecap': 'round', 'marker-end': 'url(#arrowHead)' }, sceneAttract);
 const pullText = el('text', { x: 300, y: 175, 'text-anchor': 'middle', fill: COLOR.accent, 'font-size': 16, 'font-weight': 800 }, sceneAttract);
 pullText.textContent = '인력';
+// 머리카락 탭: 전자가 풍선에게서 멀어진다는 안내 (전자 이동이 커질수록 또렷해진다)
+const electronText = el('text', { x: AT.x, y: 348, 'text-anchor': 'middle', fill: COLOR.minus, 'font-size': 15, 'font-weight': 800 }, sceneAttract);
+electronText.textContent = '전자(−)가 풍선에게서 멀어져요 →';
+let hairSep = 0; // 머리카락 전자가 오른쪽으로 옮겨 간 정도 0~1 (부드럽게 따라간다)
 
 /* ---------- DOM 참조 ---------- */
 const gaugeFill = document.getElementById('gaugeFill');
@@ -575,7 +581,7 @@ function updateRight(dt) {
   chipsBox.classList.toggle('is-hidden', !isCharge);
 
   if (isCharge) renderCharge(ph, n, net);
-  else renderAttract(n);
+  else renderAttract(n, dt);
 }
 
 function renderCharge(ph, n, net) {
@@ -611,7 +617,7 @@ function setNet(b, f) {
   netFur.className = 'net-val mono ' + (f > 0 ? 'pos' : f < 0 ? 'neg' : '');
 }
 
-function renderAttract(n) {
+function renderAttract(n, dt = 0) {
   const isFur = state.tab === 'fur';
   const a = isFur ? pull.fur : pull.hair;
 
@@ -624,7 +630,12 @@ function renderAttract(n) {
   attractBalloonCharges.set(PAIRS, PAIRS + n);
   // 털가죽: 전자를 n개 잃어 (+)가 많다 / 머리카락: 중성이지만 풍선이 다가오면 (+)와 (−)가 갈라진다(유도)
   if (isFur) attractTargetCharges.set(PAIRS, PAIRS - n);
-  else attractTargetCharges.set(PAIRS, PAIRS, a);
+  else {
+    // 풍선이 붙기 전에 전자 이동이 끝나도록, 인력이 약할 때부터 크게 움직인다
+    hairSep += (clamp(a * 2.5, 0, 1) - hairSep) * Math.min(1, dt * 5 + (dt === 0 ? 1 : 0));
+    attractTargetCharges.set(PAIRS, PAIRS, hairSep);
+  }
+  electronText.style.opacity = isFur ? 0 : hairSep;
 
   // 화살표
   const len = 12 + 30 * a;

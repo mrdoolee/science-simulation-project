@@ -32,8 +32,9 @@
 
   const PRESET = {
     1: { glove: { x: 170, y: 400 }, red: { x: 170, y: 220 } },
-    2: { glove: { x: 110, y: 420 }, red: { x: 240, y: 280 } },
-    3: { glove: { x: 240, y: 285 }, red: { x: 110, y: 150 } },
+    // 사용하지 않는 물체는 왼쪽 아래로 멀리 치워 둔다 (상호작용 없음)
+    2: { glove: { x: 80, y: 415 }, red: { x: 240, y: 280 } },
+    3: { glove: { x: 240, y: 285 }, red: { x: 80, y: 375 } },
   };
   const HINT = {
     1: '🧤 장갑을 잡고 풍선 위에서 문질러 보세요',
@@ -69,6 +70,10 @@
     y: PIVOT.y + L * Math.cos(st.theta),
   });
 
+  // 단계별로 쓰는 물체만 조작·상호작용한다 (2단계: 장갑 제외, 3단계: 빨간 풍선 제외)
+  const gloveActive = () => st.step !== 2;
+  const redActive = () => st.step !== 3;
+
   // 힘의 세기 0~1: 전하 곱에 비례, 거리에 반비례. 맞닿으면 0(문지르는 중)
   function strength(product, d, contact) {
     if (product <= 0) return 0;
@@ -82,8 +87,8 @@
   function update(dt) {
     const q = charges();
     const g = greenPos();
-    const aRed = strength(q.green * q.red, dist(g, st.red), CONTACT_BALLOON);
-    const aGlove = strength(q.green * q.glove, dist(g, st.glove), CONTACT_GLOVE);
+    const aRed = redActive() ? strength(q.green * q.red, dist(g, st.red), CONTACT_BALLOON) : 0;
+    const aGlove = gloveActive() ? strength(q.green * q.glove, dist(g, st.glove), CONTACT_GLOVE) : 0;
     st.a.red = aRed;
     st.a.glove = aGlove;
     if (aRed > 0.3) st.obs.repel = true;
@@ -125,8 +130,8 @@
 
   canvas.addEventListener('pointerdown', (e) => {
     const p = pointerPos(e);
-    if (hitGlove(p)) { st.drag = 'glove'; st.grab = { x: p.x - st.glove.x, y: p.y - st.glove.y }; }
-    else if (hitRed(p)) { st.drag = 'red'; st.grab = { x: p.x - st.red.x, y: p.y - st.red.y }; }
+    if (gloveActive() && hitGlove(p)) { st.drag = 'glove'; st.grab = { x: p.x - st.glove.x, y: p.y - st.glove.y }; }
+    else if (redActive() && hitRed(p)) { st.drag = 'red'; st.grab = { x: p.x - st.red.x, y: p.y - st.red.y }; }
     else return;
     canvas.setPointerCapture(e.pointerId);
     canvas.style.cursor = 'grabbing';
@@ -136,7 +141,7 @@
   canvas.addEventListener('pointermove', (e) => {
     const p = pointerPos(e);
     if (!st.drag) {
-      canvas.style.cursor = hitGlove(p) || hitRed(p) ? 'grab' : 'default';
+      canvas.style.cursor = (gloveActive() && hitGlove(p)) || (redActive() && hitRed(p)) ? 'grab' : 'default';
       return;
     }
     const obj = st.drag === 'glove' ? st.glove : st.red;
@@ -318,8 +323,11 @@
 
     const q = charges();
     drawGreen(q.green);
+    ctx.globalAlpha = redActive() ? 1 : 0.4;
     drawRed(q.red);
+    ctx.globalAlpha = gloveActive() ? 1 : 0.4;
     drawGlove(q.glove);
+    ctx.globalAlpha = 1;
 
     const g = greenPos();
     ctx.save();
@@ -570,6 +578,7 @@
   /* ---------- 단계, 초기화 ---------- */
   function setStep(n, keepPos) {
     st.step = n;
+    st.drag = null;
     stepTabs.forEach((b) => {
       const on = +b.dataset.step === n;
       b.classList.toggle('is-active', on);
