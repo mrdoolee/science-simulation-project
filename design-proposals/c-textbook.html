@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>시안 C 교과서 편집</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&family=Noto+Serif+KR:wght@600;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #f3f6fc;        /* 차가운 회백색 종이 */
+      --ink: #0f1b3d;
+      --ink-soft: #55628a;
+      --rule: #cbd3ea;
+      --unit: #2d3fe0;         /* 단원 색: 전기. 시뮬레이션마다 바뀌는 자리 */
+      --unit-tint: #e3e7ff;
+      --plus: #d9304c;
+      --minus: #0b8f68;
+      --serif: "Noto Serif KR", serif;
+      --sans: "IBM Plex Sans KR", "Noto Sans KR", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { font-family: var(--sans); color: var(--ink); background: var(--paper); font-size: 16px; line-height: 1.65; }
+
+    .frame { display: grid; grid-template-columns: 84px 1fr; min-height: 100vh; }
+    /* 단원 띠: 시뮬레이션이 어느 단원인지 색으로 알려 준다 */
+    .band { background: var(--unit); color: #fff; position: relative; }
+    .band span { position: sticky; top: 24px; display: block; writing-mode: vertical-rl; margin: 0 auto; padding-top: 24px; font-family: var(--serif); font-weight: 900; font-size: 22px; letter-spacing: .12em; }
+    .content { max-width: 1120px; width: 100%; padding: 30px 32px 44px; }
+
+    .lead { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; padding-bottom: 20px; border-bottom: 3px solid var(--ink); }
+    h1 { word-break: keep-all; margin: 0; font-family: var(--serif); font-weight: 900; font-size: clamp(32px, 5.4vw, 60px); line-height: 1.16; letter-spacing: -0.03em; max-width: 14em; }
+    .lead p { margin: 12px 0 0; font-family: var(--serif); font-weight: 600; font-size: 18px; color: var(--ink-soft); max-width: 34em; }
+    .modes { display: grid; gap: 6px; min-width: 250px; }
+    .mode { font: inherit; font-weight: 500; text-align: left; cursor: pointer; padding: 10px 14px; color: var(--ink-soft); background: transparent; border: 1px solid var(--rule); border-left: 5px solid var(--rule); }
+    .mode.is-active { color: var(--ink); background: #fff; border-color: var(--ink); border-left: 5px solid var(--unit); font-weight: 600; }
+    .mode:focus-visible, .step:focus-visible, .credit:focus-visible { outline: 3px solid var(--unit); outline-offset: 2px; }
+
+    /* 과정: 실제로 순서가 있는 내용이라 번호를 쓴다 */
+    .timeline { display: grid; grid-template-columns: repeat(3, 1fr); margin: 24px 0 22px; position: relative; }
+    .timeline::before { content: ""; position: absolute; left: 22px; right: 22px; top: 21px; height: 2px; background: var(--rule); }
+    .step { position: relative; font: inherit; text-align: left; background: none; border: 0; padding: 0 12px 0 0; cursor: pointer; color: var(--ink-soft); }
+    .step .n { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--paper); border: 2px solid var(--rule); font-family: var(--serif); font-weight: 900; font-size: 20px; margin-bottom: 8px; }
+    .step b { display: block; font-weight: 600; }
+    .step.is-active { color: var(--ink); }
+    .step.is-active .n { background: var(--unit); border-color: var(--unit); color: #fff; }
+
+    .bench { display: grid; grid-template-columns: 7fr 5fr; gap: 30px; align-items: start; }
+    .figure { background: #fff; border: 1px solid var(--rule); }
+    .figure figcaption { display: flex; justify-content: space-between; gap: 10px; padding: 8px 14px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-soft); }
+    .figure svg { display: block; width: 100%; height: auto; }
+    .gauge { height: 6px; background: var(--unit-tint); }
+    .gauge i { display: block; height: 100%; width: 100%; background: var(--unit); }
+
+    h2 { margin: 0 0 8px; font-family: var(--serif); font-weight: 900; font-size: 22px; }
+    .side .figure { margin-bottom: 14px; }
+    .tally { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--ink); background: #fff; }
+    .tally div { padding: 8px 12px; border-right: 1px solid var(--rule); } .tally div:last-child { border-right: 0; }
+    .tally span { display: block; font-size: 13px; color: var(--ink-soft); }
+    .tally b { font-family: var(--serif); font-size: 26px; }
+    .tally .pos b { color: var(--plus); } .tally .neg b { color: var(--minus); }
+
+    /* 정리: 교과서 본문처럼 세리프로 */
+    .summary { margin-top: 30px; padding: 22px 26px; background: var(--unit-tint); border-left: 6px solid var(--unit); }
+    .summary p { margin: 0; font-family: var(--serif); font-weight: 600; font-size: clamp(19px, 2.2vw, 24px); line-height: 1.7; max-width: 38em; }
+    .summary em { font-style: normal; background: linear-gradient(transparent 62%, rgba(45,63,224,.28) 62%); }
+
+    .footer { margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-soft); }
+    .credit { font: inherit; color: var(--unit); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+    .obj { stroke-width: 2; } .obj-glove { fill: #f4f6fb; stroke: var(--ink); } .obj-balloon { fill: #e7f6f0; stroke: var(--ink); }
+    .pill { fill: var(--unit); } .pill-text { fill: #fff; font-family: var(--sans); font-weight: 600; }
+    .chg-plus { fill: var(--plus); } .chg-minus { fill: var(--minus); }
+    .chg-sign { fill: #fff; font-weight: 600; font-family: var(--sans); }
+    .force { fill: none; stroke: var(--unit); stroke-width: 4; stroke-linecap: butt; } .force-head { fill: var(--unit); }
+    .svg-note { fill: var(--unit); font-family: var(--serif); font-weight: 600; }
+    .floor { fill: #e6ebf7; } .stand { fill: #9aa5c4; } .pivot { fill: #fff; stroke: var(--ink); stroke-width: 2; }
+    .string { stroke: var(--ink); stroke-width: 1.5; } .knot { fill: #0b7d5b; } .shine { fill: rgba(255,255,255,.6); }
+    .balloon { fill: #33b98c; stroke: var(--ink); stroke-width: 2; }
+    .glove { fill: #fff; stroke: var(--ink); stroke-width: 2; } .cuff { fill: #d9e0fb; stroke: var(--ink); stroke-width: 2; }
+    .stage-label { fill: var(--ink); font-family: var(--sans); font-weight: 600; }
+
+    .modal { position: fixed; inset: 0; display: none; place-items: center; padding: 16px; background: rgba(15,27,61,.6); z-index: 10; }
+    .modal.open { display: grid; }
+    .modal-card { position: relative; width: min(440px, 100%); background: #fff; border-top: 6px solid var(--unit); padding: 24px; }
+    .modal-card h2 { margin: 0 0 8px; }
+    .modal-x { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border: 1px solid var(--rule); background: #fff; font: inherit; cursor: pointer; }
+
+    @media (max-width: 900px) {
+      .frame { grid-template-columns: 1fr; }
+      .band { height: 44px; } .band span { writing-mode: horizontal-tb; padding: 8px 20px; margin: 0; font-size: 18px; position: static; }
+      .content { padding: 22px 16px 36px; }
+      .lead { grid-template-columns: 1fr; } .modes { min-width: 0; }
+      .bench { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) { .timeline { grid-template-columns: 1fr; gap: 6px; } .timeline::before { display: none; } .step { display: flex; align-items: center; gap: 12px; } .step .n { margin: 0; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <aside class="band" aria-hidden="true"><span>전기와 자기</span></aside>
+
+    <div class="content">
+      <header class="lead">
+        <div>
+          <h1>문지르면 왜 전기가 생길까?</h1>
+          <p>풍선과 면장갑을 문지른 뒤, 풍선이 어떻게 움직이는지 관찰하고 이유를 설명해 봅시다.</p>
+        </div>
+        <nav class="modes" role="tablist" aria-label="실험 선택">
+          <button class="mode is-active" role="tab" aria-selected="true">실험 1 마찰 전기 현상 관찰하기</button>
+          <button class="mode" role="tab" aria-selected="false">실험 2 풍선과 털가죽</button>
+        </nav>
+      </header>
+
+      <div class="timeline" role="tablist" aria-label="실험 과정">
+        <button class="step" role="tab" aria-selected="false"><span class="n">1</span><b>면장갑으로 문지르기</b></button>
+        <button class="step" role="tab" aria-selected="false"><span class="n">2</span><b>풍선 두 개 가까이 하기</b></button>
+        <button class="step is-active" role="tab" aria-selected="true"><span class="n">3</span><b>장갑을 풍선에 가까이 하기</b></button>
+      </div>
+
+      <main class="bench">
+        <figure class="figure" style="margin:0">
+          <div class="gauge" role="img" aria-label="초록 풍선 마찰량 100%"><i></i></div>
+          <svg id="stage" role="img" aria-label="스탠드에 매달린 풍선이 면장갑 쪽으로 끌려온 모습"></svg>
+          <figcaption><span>그림 1 매달린 초록 풍선에 면장갑을 가까이 한 모습</span><span>마찰량 100%</span></figcaption>
+        </figure>
+
+        <div class="side">
+          <h2>전하와 힘</h2>
+          <figure class="figure" style="margin:0 0 14px">
+            <svg id="charges" role="img" aria-label="면장갑과 초록 풍선의 양성자와 전자"></svg>
+          </figure>
+          <div class="tally">
+            <div class="pos"><span>면장갑</span><b>+8</b></div>
+            <div class="neg"><span>초록 풍선</span><b>−4</b></div>
+            <div class="neg"><span>빨간 풍선</span><b>−4</b></div>
+          </div>
+        </div>
+      </main>
+
+      <section class="summary" aria-label="정리">
+        <p>풍선은 (−)전하, 면장갑은 (+)전하로 대전되어 있습니다. <em>다른 종류의 전하끼리는 서로 끌어당기기</em> 때문에 매달린 풍선이 장갑 쪽으로 다가옵니다.</p>
+      </section>
+
+      <footer class="footer">© 2026 Designed &amp; Developed by <button class="credit" id="credit">두리쌤</button>. All rights reserved.</footer>
+    </div>
+  </div>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <div class="modal-card">
+      <button class="modal-x" id="x" aria-label="닫기">✕</button>
+      <h2 id="mt">제작: 두리쌤</h2>
+      <p>교육 목적으로 자유롭게 사용할 수 있습니다. 재배포할 때는 제작자 표기를 유지해 주세요.</p>
+    </div>
+  </div>
+
+  <script src="common.js"></script>
+  <script>
+    Demo.buildStage(document.getElementById('stage'));
+    Demo.buildCharges(document.getElementById('charges'));
+    Demo.bindSwitch('.modes', '.mode');
+    Demo.bindSwitch('.timeline', '.step');
+    const m = document.getElementById('modal');
+    document.getElementById('credit').onclick = () => m.classList.add('open');
+    document.getElementById('x').onclick = () => m.classList.remove('open');
+    m.onclick = (e) => { if (e.target === m) m.classList.remove('open'); };
+  </script>
+</body>
+</html>

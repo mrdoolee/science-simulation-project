@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>시안 A 실험 노트</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #f6faff;
+      --grid: #d9e6f7;
+      --sheet: #ffffff;
+      --ink: #1f2d4d;
+      --ink-soft: #5b6a8a;
+      --hi: #ffe66d;          /* 형광펜 */
+      --pen-blue: #2f6fe4;    /* 파란 볼펜: 포인트 */
+      --pen-red: #e5484d;     /* 양성자(+) */
+      --pen-green: #0fa37f;   /* 전자(−) */
+      --margin: #f4a3a3;
+      --hand: "Gaegu", "Gowun Dodum", sans-serif;
+      --body: "Gowun Dodum", "Noto Sans KR", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: var(--body);
+      color: var(--ink);
+      font-size: 17px;
+      line-height: 1.6;
+      background-color: var(--paper);
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    .page { position: relative; max-width: 1180px; margin: 0 auto; padding: 28px 20px 40px 76px; }
+    /* 노트 왼쪽 여백 빨간 줄 */
+    .page::before { content: ""; position: absolute; left: 52px; top: 0; bottom: 0; width: 2px; background: var(--margin); }
+
+    /* 머리글: 오늘의 질문이 주인공 */
+    .masthead { position: relative; padding: 8px 0 22px; }
+    .date-line { margin: 0 0 6px; font-family: var(--hand); font-size: 20px; color: var(--ink-soft); }
+    .blank { display: inline-block; width: 90px; border-bottom: 2px solid var(--ink-soft); margin: 0 14px 0 4px; }
+    h1 { word-break: keep-all; margin: 0; font-size: clamp(30px, 5vw, 48px); line-height: 1.25; font-weight: 400; letter-spacing: -0.02em; }
+    h1 .mark { background: linear-gradient(transparent 58%, var(--hi) 58%); padding: 0 4px; }
+    .sub { margin: 8px 0 0; font-family: var(--hand); font-size: 22px; color: var(--pen-blue); }
+
+    /* 인덱스 탭 (노트 옆에 튀어나온 색인) */
+    .index-tabs { display: flex; gap: 6px; margin: 0 0 -2px 14px; position: relative; z-index: 1; flex-wrap: wrap; }
+    .index-tab {
+      font: inherit; font-size: 16px; padding: 9px 20px 10px; cursor: pointer;
+      color: var(--ink-soft); background: #eaf1fb;
+      border: 2px solid var(--ink); border-bottom: 0; border-radius: 16px 18px 0 0;
+    }
+    .index-tab.is-active { background: var(--sheet); color: var(--ink); font-weight: 700; }
+    .index-tab:focus-visible, .step:focus-visible, .credit:focus-visible { outline: 3px solid var(--pen-blue); outline-offset: 2px; }
+
+    .sheet {
+      background: var(--sheet); border: 2px solid var(--ink); border-radius: 6px 22px 8px 20px;
+      padding: 22px; display: grid; grid-template-columns: 1.05fr 1fr; gap: 26px;
+    }
+    .note h2 { margin: 0 0 10px; font-size: 22px; font-weight: 400; display: inline-block; background: linear-gradient(transparent 62%, var(--hi) 62%); }
+
+    /* 과정 체크리스트 */
+    .steps { list-style: none; margin: 0 0 16px; padding: 0; display: grid; gap: 8px; }
+    .step {
+      width: 100%; display: flex; align-items: center; gap: 12px; text-align: left;
+      font: inherit; font-size: 18px; padding: 8px 12px; cursor: pointer; color: var(--ink);
+      background: #fff; border: 2px dashed #b8c6e0; border-radius: 14px 10px 16px 10px;
+    }
+    .box { width: 26px; height: 26px; flex: none; border: 2px solid var(--ink); border-radius: 6px 8px 5px 9px; display: grid; place-items: center; color: transparent; font-size: 20px; }
+    .step.is-active { border-style: solid; border-color: var(--ink); background: #fffbe0; }
+    .step.is-active .box { color: var(--pen-blue); font-weight: 700; }
+
+    /* 마찰량: 자 눈금 */
+    .ruler { margin: 0 0 16px; }
+    .ruler-row { display: flex; justify-content: space-between; font-size: 16px; }
+    .ruler-bar {
+      position: relative; height: 26px; margin-top: 4px; border: 2px solid var(--ink); border-radius: 4px; background: #fff7c9;
+      background-image: repeating-linear-gradient(90deg, var(--ink) 0 1.5px, transparent 1.5px 20px);
+      background-size: 100% 10px; background-repeat: no-repeat; background-position: bottom;
+    }
+    .ruler-fill { position: absolute; inset: 0 auto 0 0; width: 100%; background: rgba(47,111,228,.22); border-right: 3px solid var(--pen-blue); }
+
+    .stage { position: relative; border: 2px solid var(--ink); border-radius: 10px 6px 12px 6px; background: #fbfdff; overflow: hidden; }
+    .stage svg, .board svg { display: block; width: 100%; height: auto; }
+    .jot { position: absolute; font-family: var(--hand); font-size: 22px; color: var(--pen-red); transform: rotate(-4deg); pointer-events: none; }
+    .jot.a { left: 34%; top: 46%; }
+
+    .board { border: 2px solid var(--ink); border-radius: 6px 12px 6px 12px; background: #fbfdff; }
+    .tally { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0; }
+    .tally div { border: 2px solid var(--ink); border-radius: 10px 6px 10px 6px; padding: 6px 10px; display: flex; justify-content: space-between; align-items: baseline; }
+    .tally b { font-family: var(--hand); font-size: 30px; line-height: 1; }
+    .tally .pos b { color: var(--pen-red); } .tally .neg b { color: var(--pen-green); }
+
+    /* 관찰 결과: 줄 노트 */
+    .result { padding: 6px 4px 6px; background-image: repeating-linear-gradient(transparent 0 33px, #c9d6ee 33px 34px); line-height: 34px; margin: 0; font-size: 18px; }
+    .result mark { background: var(--hi); color: inherit; padding: 0 3px; }
+
+    .footer { margin-top: 24px; text-align: center; font-size: 14px; color: var(--ink-soft); }
+    .credit { font: inherit; color: var(--pen-blue); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline wavy; text-underline-offset: 4px; }
+
+    /* svg 색 */
+    .obj { stroke-width: 2.5; }
+    .obj-glove { fill: #f1f5fc; stroke: var(--ink); } .obj-balloon { fill: #e4f8ee; stroke: var(--ink); }
+    .pill { fill: var(--ink); stroke: none; } .pill-text { fill: #fff; font-family: var(--body); }
+    .chg-plus { fill: var(--pen-red); stroke: #fff; stroke-width: 1.5; } .chg-minus { fill: var(--pen-green); stroke: #fff; stroke-width: 1.5; }
+    .chg-sign { fill: #fff; font-weight: 700; font-family: var(--body); }
+    .force { fill: none; stroke: var(--pen-blue); stroke-width: 5; stroke-linecap: round; } .force-head { fill: var(--pen-blue); }
+    .svg-note { fill: var(--pen-blue); font-family: var(--hand); font-weight: 700; }
+    .floor { fill: #e3ecf9; } .stand { fill: #8c9bb8; stroke: var(--ink); stroke-width: 2; } .pivot { fill: #fff; stroke: var(--ink); stroke-width: 2; }
+    .string { stroke: var(--ink); stroke-width: 2; } .knot { fill: #0b8a69; } .shine { fill: rgba(255,255,255,.55); }
+    .balloon { fill: #3ec99b; stroke: var(--ink); stroke-width: 2.5; }
+    .glove { fill: #fff; stroke: var(--ink); stroke-width: 2.5; } .cuff { fill: #cfe0ff; stroke: var(--ink); stroke-width: 2.5; }
+    .stage-label { fill: var(--ink); font-family: var(--hand); font-weight: 700; }
+
+    /* 모달 */
+    .modal { position: fixed; inset: 0; display: none; place-items: center; padding: 16px; background: rgba(31,45,77,.55); z-index: 10; }
+    .modal.open { display: grid; }
+    .modal-card { position: relative; width: min(440px, 100%); background: #fff; border: 2px solid var(--ink); border-radius: 8px 20px 8px 20px; padding: 22px; }
+    .modal-card h2 { margin: 0 0 6px; font-size: 24px; font-weight: 400; background: linear-gradient(transparent 60%, var(--hi) 60%); display: inline-block; }
+    .modal-card ul { margin: 8px 0 14px; padding-left: 20px; }
+    .modal-card a { color: var(--pen-blue); }
+    .modal-x { position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; font: inherit; cursor: pointer; }
+
+    @media (max-width: 860px) {
+      .page { padding: 20px 14px 32px 34px; } .page::before { left: 22px; }
+      .sheet { grid-template-columns: 1fr; padding: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="masthead">
+      <p class="date-line">이름 <span class="blank"></span> 실험한 날 <span class="blank"></span></p>
+      <h1>풍선을 문지르면 <span class="mark">어떻게 될까?</span></h1>
+      <p class="sub">마찰전기 실험 노트</p>
+    </header>
+
+    <nav class="index-tabs" role="tablist" aria-label="실험 선택">
+      <button class="index-tab is-active" role="tab" aria-selected="true">실험 1 마찰 전기 현상 관찰하기</button>
+      <button class="index-tab" role="tab" aria-selected="false">실험 2 풍선과 털가죽</button>
+    </nav>
+
+    <main class="sheet">
+      <section class="note">
+        <h2>실험하기</h2>
+        <div class="steps" role="tablist" aria-label="실험 과정">
+          <button class="step" role="tab" aria-selected="false"><span class="box">✔</span>면장갑으로 풍선 문지르기</button>
+          <button class="step" role="tab" aria-selected="false"><span class="box">✔</span>풍선 두 개 가까이 하기</button>
+          <button class="step is-active" role="tab" aria-selected="true"><span class="box">✔</span>장갑을 풍선에 가까이 하기</button>
+        </div>
+        <div class="ruler">
+          <div class="ruler-row"><span>초록 풍선 마찰량</span><b>100%</b></div>
+          <div class="ruler-bar"><div class="ruler-fill"></div></div>
+        </div>
+        <div class="stage">
+          <svg id="stage" role="img" aria-label="스탠드에 매달린 풍선이 면장갑 쪽으로 끌려온 모습"></svg>
+          <span class="jot a">끌려온다!</span>
+        </div>
+      </section>
+
+      <section class="note">
+        <h2>전하와 힘</h2>
+        <div class="board"><svg id="charges" role="img" aria-label="면장갑과 초록 풍선의 양성자와 전자"></svg></div>
+        <div class="tally">
+          <div class="pos"><span>면장갑</span><b>+8</b></div>
+          <div class="neg"><span>초록 풍선</span><b>−4</b></div>
+          <div class="neg"><span>빨간 풍선</span><b>−4</b></div>
+        </div>
+        <h2>관찰 결과</h2>
+        <p class="result">풍선은 (−), 면장갑은 (+)전하라서 <mark>다른 종류의 전하끼리 서로 끌어당겨요.</mark> 그래서 매달린 풍선이 장갑 쪽으로 다가와요.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      © 2026 Designed &amp; Developed by <button class="credit" id="credit">두리쌤</button>. All rights reserved.
+    </footer>
+  </div>
+
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <div class="modal-card">
+      <button class="modal-x" id="x" aria-label="닫기">✕</button>
+      <h2 id="mt">제작: 두리쌤</h2>
+      <ul><li>교육 목적으로 자유롭게 사용할 수 있어요.</li><li>재배포할 때는 제작자 표기를 유지해 주세요.</li></ul>
+      <a href="#">Instagram trdoolee</a>
+    </div>
+  </div>
+
+  <script src="common.js"></script>
+  <script>
+    Demo.buildStage(document.getElementById('stage'));
+    Demo.buildCharges(document.getElementById('charges'));
+    Demo.bindSwitch('.index-tabs', '.index-tab');
+    Demo.bindSwitch('.steps', '.step');
+    const m = document.getElementById('modal');
+    document.getElementById('credit').onclick = () => m.classList.add('open');
+    document.getElementById('x').onclick = () => m.classList.remove('open');
+    m.onclick = (e) => { if (e.target === m) m.classList.remove('open'); };
+  </script>
+</body>
+</html>
