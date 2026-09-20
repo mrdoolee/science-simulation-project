@@ -6,7 +6,7 @@
 |---|---|---|
 | 마찰전기 | [friction-electricity](friction-electricity) | 실험 1 마찰 전기 현상 관찰하기, 실험 2 풍선과 털가죽 대전 과정 |
 
-디자인 참고: https://ionformation.vercel.app/
+디자인 기본값: [CLAUDE.md](CLAUDE.md)의 "디자인 규칙" (시안은 `design-proposals/`)
 
 ## 문서
 

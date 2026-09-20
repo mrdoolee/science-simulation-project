@@ -37,5 +37,5 @@ Vercel 정적 배포: https://friction-electricity.vercel.app
 
 ## 구성
 
-- `index.html`, `style.css`, `main.js` (바닐라 JS, Canvas + SVG, 외부 라이브러리 없음)
-- 디자인 참고: https://ionformation.vercel.app/
+- `index.html`, `style.css`, `main.js`, `observe.js`, `app.js` (바닐라 JS, Canvas + SVG, 외부 라이브러리 없음)
+- 디자인: 교과서 편집(색·구성) + 팝 버튼 형태, 태블릿 기준. 규칙은 루트 `CLAUDE.md`의 "디자인 규칙" 참고
