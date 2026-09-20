@@ -23,12 +23,12 @@ const BALLOON_RX = 46;
 const BALLOON_RY = 58;
 
 const COLOR = {
-  plus: '#f43f5e',
-  minus: '#10b981',
-  balloon: '#3b82f6',
-  fur: '#facc15',
-  hair: '#fb923c',
-  accent: '#a5b4fc',
+  plus: '#d9304c',
+  minus: '#0b8f68',
+  balloon: '#4a63e7',
+  fur: '#d99a06',
+  hair: '#e06a1b',
+  accent: '#2d3fe0',
 };
 const MINUS = '−';
 
@@ -183,8 +183,8 @@ function drawFur(a, sway) {
   }
   ctx.restore();
 
-  ctx.fillStyle = 'rgba(241,245,249,0.85)';
-  ctx.font = '700 18px "Noto Sans KR", sans-serif';
+  ctx.fillStyle = '#0f1b3d';
+  ctx.font = '700 18px "IBM Plex Sans KR", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('털가죽', PAD.x + PAD.w / 2, PAD.y - 10);
 }
@@ -229,8 +229,8 @@ function drawHair(a, t) {
   }
   ctx.restore();
 
-  ctx.fillStyle = 'rgba(241,245,249,0.85)';
-  ctx.font = '700 18px "Noto Sans KR", sans-serif';
+  ctx.fillStyle = '#0f1b3d';
+  ctx.font = '700 18px "IBM Plex Sans KR", sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText('머리카락', c.x, c.y + c.r + 22);
 }
@@ -239,7 +239,7 @@ function drawBalloon() {
   const { x, y } = state.balloon;
   ctx.save();
   // 끈
-  ctx.strokeStyle = 'rgba(203,213,225,0.7)';
+  ctx.strokeStyle = 'rgba(15,27,61,0.55)';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x, y + BALLOON_RY + 8);
@@ -289,7 +289,7 @@ function drawChargeDot(x, y, r, color, sign) {
   ctx.lineWidth = 1.5;
   ctx.stroke();
   ctx.fillStyle = '#fff';
-  ctx.font = `800 ${r * 1.5}px "Plus Jakarta Sans", sans-serif`;
+  ctx.font = `800 ${r * 1.5}px "IBM Plex Sans KR", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(sign, x, y + 0.5);
@@ -336,7 +336,7 @@ function driftBalloon(dt) {
 function drawLeft(t) {
   ctx.clearRect(0, 0, W, H);
   // 바닥
-  ctx.fillStyle = 'rgba(148,163,184,0.10)';
+  ctx.fillStyle = 'rgba(15,27,61,0.06)';
   ctx.fillRect(0, H - 28, W, 28);
 
   drawFur(pull.fur, t);
@@ -346,13 +346,13 @@ function drawLeft(t) {
   // 인력 표시(털가죽 쪽)
   if (pull.fur > 0.2 && !state.dragging) {
     ctx.fillStyle = COLOR.accent;
-    ctx.font = '700 16px "Noto Sans KR", sans-serif';
+    ctx.font = '700 16px "IBM Plex Sans KR", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('끌려요!', state.balloon.x, state.balloon.y - BALLOON_RY - 12);
   }
   if (pull.hair > 0.2) {
     ctx.fillStyle = COLOR.accent;
-    ctx.font = '700 16px "Noto Sans KR", sans-serif';
+    ctx.font = '700 16px "IBM Plex Sans KR", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('머리카락이 올라와요!', state.balloon.x, state.balloon.y - BALLOON_RY - 12);
   }
@@ -497,7 +497,7 @@ sceneAttract.style.display = 'none';
 
 el('defs', {}, sceneAttract).innerHTML =
   '<marker id="arrowHead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">' +
-  '<path d="M0 0 L10 5 L0 10 z" fill="#a5b4fc"/></marker>';
+  '<path d="M0 0 L10 5 L0 10 z" fill="#2d3fe0"/></marker>';
 
 const attractBalloonCircle = el('circle', { cx: AB.x, cy: AB.y, r: AB.r, fill: 'rgba(59,130,246,0.14)', stroke: COLOR.balloon, 'stroke-width': 3 }, sceneAttract);
 const attractTargetCircle = el('circle', { cx: AT.x, cy: AT.y, r: AT.r, 'stroke-width': 3 }, sceneAttract);

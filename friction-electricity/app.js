@@ -8,6 +8,18 @@
     balloon: document.getElementById('expBalloon'),
   };
 
+  // 실험마다 머리글(질문)이 바뀐다
+  const HEADINGS = {
+    observe: {
+      title: '문지르면 왜 전기가 생길까?',
+      lead: '면장갑으로 풍선을 문지른 뒤, 풍선이 어떻게 움직이는지 관찰하고 이유를 설명해 봅시다.',
+    },
+    balloon: {
+      title: '풍선은 어떻게 전기를 띠게 될까?',
+      lead: '풍선과 털가죽을 문지를 때 전자가 어떻게 이동하는지 살펴봅시다.',
+    },
+  };
+
   function setMode(mode) {
     if (!panes[mode]) mode = 'observe';
     tabs.forEach((b) => {
@@ -16,6 +28,8 @@
       b.setAttribute('aria-selected', String(on));
     });
     for (const k in panes) panes[k].hidden = k !== mode;
+    document.getElementById('pageTitle').textContent = HEADINGS[mode].title;
+    document.getElementById('pageLead').textContent = HEADINGS[mode].lead;
     try { history.replaceState(null, '', '#' + mode); } catch (e) { /* file:// 등에서는 무시 */ }
   }
 

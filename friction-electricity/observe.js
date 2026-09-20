@@ -181,7 +181,7 @@
     ctx.lineWidth = 1.5;
     ctx.stroke();
     ctx.fillStyle = '#fff';
-    ctx.font = `800 ${r * 1.5}px "Plus Jakarta Sans", sans-serif`;
+    ctx.font = `800 ${r * 1.5}px "IBM Plex Sans KR", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(sign, x, y + 0.5);
@@ -190,8 +190,8 @@
 
   function label(text, x, y) {
     ctx.save();
-    ctx.fillStyle = 'rgba(241,245,249,0.85)';
-    ctx.font = '700 16px "Noto Sans KR", sans-serif';
+    ctx.fillStyle = '#0f1b3d';
+    ctx.font = '700 16px "IBM Plex Sans KR", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(text, x, y);
     ctx.restore();
@@ -204,7 +204,7 @@
     ctx.fillStyle = '#64748b';
     ctx.fillRect(578, 44, 12, 430);
     ctx.beginPath(); ctx.roundRect(PIVOT.x - 12, 44, 590 - PIVOT.x + 12, 12, 5); ctx.fill();
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = '#0f1b3d';
     ctx.beginPath(); ctx.arc(PIVOT.x, PIVOT.y, 5, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
@@ -241,7 +241,7 @@
     const diry = Math.cos(st.theta);
     // 실
     ctx.save();
-    ctx.strokeStyle = 'rgba(226,232,240,0.85)';
+    ctx.strokeStyle = 'rgba(15,27,61,0.6)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(PIVOT.x, PIVOT.y);
@@ -270,7 +270,7 @@
     ctx.fillStyle = '#f2c9a5';
     ctx.beginPath(); ctx.arc(2, RY + 28, 14, 0, Math.PI * 2); ctx.fill();
     // 끈과 매듭
-    ctx.strokeStyle = 'rgba(226,232,240,0.7)';
+    ctx.strokeStyle = 'rgba(15,27,61,0.5)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(0, RY + 8);
@@ -317,7 +317,7 @@
 
   function drawLeft() {
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = 'rgba(148,163,184,0.10)';
+    ctx.fillStyle = 'rgba(15,27,61,0.06)';
     ctx.fillRect(0, H - 28, W, 28);
     drawStand();
 
@@ -332,7 +332,7 @@
     const g = greenPos();
     ctx.save();
     ctx.fillStyle = COLOR.accent;
-    ctx.font = '700 16px "Noto Sans KR", sans-serif';
+    ctx.font = '700 16px "IBM Plex Sans KR", sans-serif';
     ctx.textAlign = 'center';
     if (st.a.red > 0.25) ctx.fillText('서로 밀어내요!', g.x, g.y + RY + 48);
     else if (st.a.glove > 0.25) ctx.fillText('서로 끌어당겨요!', g.x, g.y + RY + 48);
@@ -345,8 +345,8 @@
   const svg = document.getElementById('obSvg');
 
   el('defs', {}, svg).innerHTML =
-    '<marker id="obArrowA" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#a5b4fc"/></marker>' +
-    '<marker id="obArrowR" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#fbbf24"/></marker>';
+    '<marker id="obArrowA" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2d3fe0"/></marker>' +
+    '<marker id="obArrowR" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#b45309"/></marker>';
 
   function pill(parent, x, y, text, fill, w = 84) {
     el('rect', { x: x - w / 2, y: y - 15, width: w, height: 30, rx: 15, fill, stroke: 'rgba(255,255,255,0.4)' }, parent);
@@ -357,7 +357,7 @@
 
   const CY = 215;
   const CIRCLE = {
-    glove: { fill: 'rgba(226,232,240,0.10)', stroke: '#e2e8f0', pill: '#64748b', name: '면장갑' },
+    glove: { fill: 'rgba(139,149,181,0.14)', stroke: '#8b95b5', pill: '#64748b', name: '면장갑' },
     green: { fill: 'rgba(34,197,94,0.14)', stroke: '#22c55e', pill: '#16a34a', name: '초록 풍선' },
     red: { fill: 'rgba(239,68,68,0.14)', stroke: '#ef4444', pill: '#dc2626', name: '빨간 풍선' },
   };
@@ -517,7 +517,7 @@
 
       // 화살표: 같은 부호는 밀어냄(가운데에서 바깥쪽), 다른 부호는 끌어당김(바깥에서 가운데)
       const len = 12 + 24 * a;
-      const color = isRed ? '#fbbf24' : '#a5b4fc';
+      const color = isRed ? '#b45309' : '#2d3fe0';
       const marker = isRed ? 'url(#obArrowR)' : 'url(#obArrowA)';
       const [l, r] = arrows;
       if (isRed) {

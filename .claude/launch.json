@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "5173", "--directory", "friction-electricity"],
       "port": 5173
+    },
+    {
+      "name": "design-proposals",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5174", "--directory", "design-proposals"],
+      "port": 5174
     }
   ]
 }
